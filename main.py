@@ -21,7 +21,8 @@ class Message:
 
 class AutoEmail:
     def __init__(self):
-        self.mail_box = smtplib.SMTP('localhost')
+        self.mail_box = smtplib.SMTP("smtp.mailtrap.io", 2525)
+        self.mail_box.login("100aaa2dcbda2a", "5f7c644d934550")
 
     def __enter__(self):
         return self.mail_box

@@ -1,40 +1,14 @@
 
-import smtplib
-from os import path
 from database import DataBase
-from email.message import EmailMessage
+from mail_sender import AutoEmail, Message
 
-class Message:
-    def __init__(self,  addres, text) -> None:
-        self.addres = addres
-        self.content = text
-        self.msg = self.create_msg()
 
-    def create_msg(self):
-        msg = EmailMessage()
-        msg.set_content(self.content)
-        msg['Subject'] = 'Give me my book back'
-        msg['From'] = 'me'
-        msg['To'] = self.addres
+class Reminder:
+    def __init__(self, database : DataBase) -> None:
+        self.db = database
+        self.db.check_if_exists()
 
-        return msg
-
-class AutoEmail:
-    def __init__(self):
-        self.mail_box = smtplib.SMTP("smtp.mailtrap.io", 2525)
-        self.mail_box.login("100aaa2dcbda2a", "5f7c644d934550")
-
-    def __enter__(self):
-        return self.mail_box
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.mail_box.quit()
-
-class Menu:
-    def __init__(self) -> None:
-        pass
-
-    def show_main_menu(self):
+    def show_all_entry(self):
         pass
 
     def show_details(self):
@@ -46,10 +20,29 @@ class Menu:
     def remove_entry(self):
         pass
 
-    def send_reminder(self):
-        pass
+    def send_remind(self, *args):
+        recipients_list = []
+        if args:
+            for arg in args:
+                recipients_list.append(self.db.get_content(column='name', data = arg)[0])
+        else:
+            recipients_list.append(self.db.get_content())
+
+        for recipient in recipients_list:
+            address = recipient['mail']
+            name = recipient['name']
+            book = recipient['book_name']
+            message = f"""
+Hi {name}!
+You have my book "{book}".
+Have you read it yet?"""
+
+            mail = Message(address, message).create_msg()
+            with AutoEmail() as mail_box:
+                if mail_box.send_message(mail):
+                    print(f"nie powiodła się wysyłka do {mail['to']}")
+                else:
+                    print(f"wysłałem wiadomość do: {mail['to']}")
 
 if __name__ == '__main__':
-    mail = Message('alien125@g.pl', 'test text').create_msg()
-    with AutoEmail() as mail_box:
-        mail_box.send_message(mail)
+    Reminder(DataBase('test.db')).send_remind('Jaro', 'Kasia')

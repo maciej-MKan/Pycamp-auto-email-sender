@@ -6,8 +6,9 @@ from datetime import datetime
 class DataBase:
     def __init__(self, db_name):
         self.db = db_name
+        self.db_connect()
 
-    def db_manager(self):
+    def db_connect(self):
         with sqlite3.connect(self.db) as connection:
             self.cursor = connection.cursor()
 
@@ -20,19 +21,22 @@ class DataBase:
     def create_db(self):
         self.cursor.execute(
             """CREATE TABLE IF NOT EXISTS book (id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL, book_name TEXT, date DATE)""")
+            name TEXT NOT NULL, mail TEXT NOT NULL, book_name TEXT, date DATE)""")
 
-    def get_content(self, column = 'id', data = not None):
+    def get_content(self, column = 'id', data = None):
         output_content = []
 
-        self.cursor.execute(f"SELECT id, name, book_name, date FROM book WHERE {column} IS ?", (data,))
+        if data:
+            self.cursor.execute(f"SELECT id, name, mail, book_name, date FROM book WHERE {column} IS ?", (data,))
+        else:
+            self.cursor.execute("SELECT id, name, mail, book_name, date FROM book")
 
-        for id, name, book_name, date in self.cursor.fetchall():
-            output_content.append({'id': id, 'name' : name, 'book_name' : book_name, 'date' : date}) 
+        for id, name, mail, book_name, date in self.cursor.fetchall():
+            output_content.append({'id': id, 'name' : name, 'mail' : mail, 'book_name' : book_name, 'date' : date})
         return output_content
 
-    def put_content(self, name, book_name, date = datetime.now()):
-        self.cursor.execute("INSERT INTO book(name, book_name, date) VALUES (?,?,?)", (name, book_name, date))
+    def put_content(self, name, mail, book_name, date = datetime.now()):
+        self.cursor.execute("INSERT INTO book(name, mail, book_name, date) VALUES (?, ?, ?, ?)", (name, mail, book_name, date))
 
     def delete_content(self, column = 'id', data = not None):
         self.cursor.execute(f"DELETE FROM book WHERE {column} IS ?", (data,))

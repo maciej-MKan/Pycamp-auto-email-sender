@@ -1,7 +1,7 @@
 import smtplib
+from email.message import EmailMessage
 from os import getenv
 from dotenv import load_dotenv
-from email.message import EmailMessage
 
 class Message:
     def __init__(self,  addres, text) -> None:

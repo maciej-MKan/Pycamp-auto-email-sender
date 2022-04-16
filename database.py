@@ -6,10 +6,11 @@ from datetime import datetime
 class DataBase:
     def __init__(self, db_name):
         self.db = db_name
+        self.connect = sqlite3.connect(self.db)
         self.db_connect()
 
     def db_connect(self):
-        with sqlite3.connect(self.db) as connection:
+        with self.connect as connection:
             self.cursor = connection.cursor()
 
 
@@ -40,3 +41,8 @@ class DataBase:
 
     def delete_content(self, column = 'id', data = not None):
         self.cursor.execute(f"DELETE FROM book WHERE {column} IS ?", (data,))
+
+    def __del__(self):
+        del self.cursor
+        self.connect.commit()
+        self.connect.close()

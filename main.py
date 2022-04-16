@@ -1,66 +1,14 @@
 
-import sqlite3
-import smtplib
-from os import path
-from datetime import datetime
-import tasks
+from database import DataBase
+from mail_sender import AutoEmail, Message
 
-class AutoEmail:
-    def __init__(self):
-        pass
 
-    def __enter__(self):
-        return self
+class Reminder:
+    def __init__(self, database : DataBase) -> None:
+        self.db = database
+        self.db.check_if_exists()
 
-    def __exit__(sel, exc_type, exc_val, exc_tb):
-        pass
-
-class DataBase:
-    def __init__(self, db_name):
-        self.db = db_name
-
-    def db_manager(self, task):
-        with sqlite3.connect(self.db, check_same_thread=False) as connection:
-            cursor = connection.cursor()
-            if isinstance(task, tuple):
-                cursor.execute(task[0],task[1])
-            else:
-                cursor.execute(task)
-            return cursor
-
-    def check_if_exists(self):
-        if self.db == ':memory:' or not path.isfile(self.db):
-            self.create_db()
-        return True
-
-    def create_db(self):
-        self.db_manager(tasks.task_creation)
-
-    def get_content(self, column = 'id', data = None):
-        output_content = []
-
-        if data:
-            curent_task = f"SELECT id, name, book_name, date FROM book WHERE {column} = ?", (data,)
-        else:
-            curent_task = "SELECT id, name, book_name, date FROM book"
-
-        curent_cursor = self.db_manager(curent_task)
-        for id, name, book_name, date in curent_cursor.fetchall():
-            output_content.append({'id': id, 'name' : name, 'book_name' : book_name, 'date' : date}) 
-        return output_content
-
-    def put_content(self, name, book_name, date = datetime.now()):
-        curent_task = "INSERT INTO book(name, book_name, date) VALUES (?,?,?)", (name, book_name, date)
-        self.db_manager(curent_task)
-
-    def delete_content(self):
-        pass
-
-class Menu:
-    def __init__(self) -> None:
-        pass
-
-    def show_main_menu(self):
+    def show_all_entry(self):
         pass
 
     def show_details(self):
@@ -72,8 +20,29 @@ class Menu:
     def remove_entry(self):
         pass
 
-    def send_reminder(self):
-        pass
+    def send_remind(self, *args):
+        recipients_list = []
+        if args:
+            for arg in args:
+                recipients_list.append(self.db.get_content(column='name', data = arg)[0])
+        else:
+            recipients_list.append(self.db.get_content())
+
+        for recipient in recipients_list:
+            address = recipient['mail']
+            name = recipient['name']
+            book = recipient['book_name']
+            message = f"""
+Hi {name}!
+You have my book "{book}".
+Have you read it yet?"""
+
+            mail = Message(address, message).create_msg()
+            with AutoEmail() as mail_box:
+                if mail_box.send_message(mail):
+                    print(f"nie powiodła się wysyłka do {mail['to']}")
+                else:
+                    print(f"wysłałem wiadomość do: {mail['to']}")
 
 if __name__ == '__main__':
-    pass
+    Reminder(DataBase('test.db')).send_remind('Jaro', 'Kasia')
